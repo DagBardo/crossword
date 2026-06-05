@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prompt Crossword</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>Prompt Crossword</h1>
+      <p>Generate a fresh 9×9 criss-cross puzzle from any topic.</p>
+    </header>
+    <section class="controls">
+      <label>Topic <input id="themeInput" value="Australia" placeholder="e.g., Daoist concepts, Australian marsupials" /></label>
+      <label>Difficulty
+        <select id="difficultySelect">
+          <option value="1">1 — easy</option><option value="2" selected>2 — gentle</option><option value="3">3 — medium</option><option value="4">4 — hard</option><option value="5">5 — fiendish</option>
+        </select>
+      </label>
+      <label>Style
+        <select id="styleSelect">
+          <option value="learning" selected>Learning</option><option value="trivia">Trivia</option><option value="academic">Academic</option><option value="humorous">Humorous</option><option value="cryptic-ish">Cryptic-ish</option>
+        </select>
+      </label>
+      <button id="generateBtn">Generate new puzzle</button><button id="checkBtn">Check</button><button id="revealBtn">Reveal</button><button id="clearBtn">Clear</button>
+    </section>
+    <section class="status" id="status" role="status" aria-live="polite"></section>
+    <section class="layout">
+      <div id="grid" class="grid" aria-label="Crossword grid"></div>
+      <aside class="clues"><section><h2>Across</h2><ol id="acrossClues"></ol></section><section><h2>Down</h2><ol id="downClues"></ol></section></aside>
+    </section>
+    <section class="notes"><h2>Answer notes</h2><div id="answerNotes"></div></section>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
