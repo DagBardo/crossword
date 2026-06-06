@@ -1,1 +1,76 @@
-import{generateThemeWords}from"./modules/aiWordGenerator.js";import{buildGrid}from"./modules/gridBuilder.js";import{numberClues}from"./modules/clueNumberer.js";import{CrosswordRenderer}from"./modules/crosswordRenderer.js";const els={themeInput:document.getElementById("themeInput"),difficultySelect:document.getElementById("difficultySelect"),styleSelect:document.getElementById("styleSelect"),generateBtn:document.getElementById("generateBtn"),checkBtn:document.getElementById("checkBtn"),revealBtn:document.getElementById("revealBtn"),clearBtn:document.getElementById("clearBtn"),grid:document.getElementById("grid"),acrossClues:document.getElementById("acrossClues"),downClues:document.getElementById("downClues"),status:document.getElementById("status"),answerNotes:document.getElementById("answerNotes")};const renderer=new CrosswordRenderer({gridEl:els.grid,acrossEl:els.acrossClues,downEl:els.downClues,statusEl:els.status,notesEl:els.answerNotes});function setBusy(isBusy){els.generateBtn.disabled=isBusy;els.generateBtn.textContent=isBusy?"Generating...":"Generate new puzzle"}async function generatePuzzle(){const theme=els.themeInput.value.trim()||"general knowledge",difficulty=Number(els.difficultySelect.value),style=els.styleSelect.value;setBusy(true);els.status.textContent=`Generating ${style} puzzle for “${theme}”...`;try{const entries=await generateThemeWords({theme,difficulty,style,maxWords:12});const built=buildGrid(entries,9);const numbering=numberClues(built.grid,built.placements);renderer.render({theme,difficulty,style,entries,...built,numbering})}catch(error){console.error(error);els.status.textContent="Could not generate puzzle."}finally{setBusy(false)}}els.generateBtn.addEventListener("click",generatePuzzle);els.checkBtn.addEventListener("click",()=>renderer.check());els.revealBtn.addEventListener("click",()=>renderer.reveal());els.clearBtn.addEventListener("click",()=>renderer.clear());generatePuzzle();
+import { generateThemeWords } from "./modules/aiWordGenerator.js";
+import { buildGrid } from "./modules/gridBuilder.js";
+import { numberClues } from "./modules/clueNumberer.js";
+import { CrosswordRenderer } from "./modules/crosswordRenderer.js";
+
+const els = {
+  themeInput: document.getElementById("themeInput"),
+  difficultySelect: document.getElementById("difficultySelect"),
+  styleSelect: document.getElementById("styleSelect"),
+  generateBtn: document.getElementById("generateBtn"),
+  checkBtn: document.getElementById("checkBtn"),
+  revealBtn: document.getElementById("revealBtn"),
+  clearBtn: document.getElementById("clearBtn"),
+  grid: document.getElementById("grid"),
+  acrossClues: document.getElementById("acrossClues"),
+  downClues: document.getElementById("downClues"),
+  status: document.getElementById("status"),
+  answerNotes: document.getElementById("answerNotes")
+};
+
+const renderer = new CrosswordRenderer({
+  gridEl: els.grid,
+  acrossEl: els.acrossClues,
+  downEl: els.downClues,
+  statusEl: els.status,
+  notesEl: els.answerNotes
+});
+
+function setBusy(isBusy) {
+  els.generateBtn.disabled = isBusy;
+  els.generateBtn.textContent = isBusy
+    ? "Generating..."
+    : "Generate new puzzle";
+}
+
+async function generatePuzzle() {
+  const theme = els.themeInput.value.trim() || "general knowledge";
+  const difficulty = Number(els.difficultySelect.value);
+  const style = els.styleSelect.value;
+
+  setBusy(true);
+  els.status.textContent = `Generating ${style} puzzle for “${theme}”...`;
+
+  try {
+    const entries = await generateThemeWords({
+      theme,
+      difficulty,
+      style,
+      maxWords: 18
+    });
+
+    const built = buildGrid(entries, 9);
+    const numbering = numberClues(built.grid, built.placements);
+
+    renderer.render({
+      theme,
+      difficulty,
+      style,
+      entries,
+      ...built,
+      numbering
+    });
+  } catch (error) {
+    console.error(error);
+    els.status.textContent = "Could not generate puzzle.";
+  } finally {
+    setBusy(false);
+  }
+}
+
+els.generateBtn.addEventListener("click", generatePuzzle);
+els.checkBtn.addEventListener("click", () => renderer.check());
+els.revealBtn.addEventListener("click", () => renderer.reveal());
+els.clearBtn.addEventListener("click", () => renderer.clear());
+
+generatePuzzle();
