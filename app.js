@@ -28,9 +28,7 @@ const renderer = new CrosswordRenderer({
 
 function setBusy(isBusy) {
   els.generateBtn.disabled = isBusy;
-  els.generateBtn.textContent = isBusy
-    ? "Generating..."
-    : "Generate new puzzle";
+  els.generateBtn.textContent = isBusy ? "Generating..." : "Generate new puzzle";
 }
 
 async function generatePuzzle() {
