@@ -263,3 +263,27 @@ button:disabled {
 body {
   outline: 12px solid red !important;
 }
+.cell {
+  position: relative;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cell:focus {
+  outline: 2px solid #333;
+  outline-offset: -2px;
+}
+
+.letter {
+  font-size: 23px;
+  font-weight: 650;
+  line-height: 1;
+  z-index: 1;
+}
+
+.number {
+  z-index: 2;
+}
