@@ -260,3 +260,6 @@ button:disabled {
     grid-template-columns: 1fr !important;
   }
 }
+body {
+  outline: 12px solid red !important;
+}
