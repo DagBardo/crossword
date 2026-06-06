@@ -42,57 +42,29 @@ async function generatePuzzle() {
   els.status.textContent = `Generating ${style} puzzle for “${theme}”...`;
 
   try {
-let best = null;
+    const entries = await generateThemeWords({
+      theme,
+      difficulty,
+      style,
+      maxWords: 18
+    });
 
-for (let attempt = 1; attempt <= 3; attempt++) {
-  els.status.textContent = `Generating ${style} puzzle for “${theme}”... attempt ${attempt}/3`;
-
-  const entries = await generateThemeWords({
-    theme,
-    difficulty,
-    style,
-    maxWords: 18
-  });
-
-  const built = buildGrid(entries, 9);
-  const numbering = numberClues(built.grid, built.placements);
-
-  const candidate = {
-    entries,
-    built,
-    numbering,
-    placedCount: built.placements.length
-  };
-
-  if (!best || candidate.placedCount > best.placedCount) {
-    best = candidate;
-  }
-
-  if (candidate.placedCount >= 7) {
-    break;
-  }
-}
-
-renderer.render({
-  theme,
-  difficulty,
-  style,
-  entries: best.entries,
-  ...best.built,
-  numbering: best.numbering
-});
+    const built = buildGrid(entries, 9);
+    const numbering = numberClues(built.grid, built.placements);
 
     renderer.render({
       theme,
       difficulty,
       style,
       entries,
-      ...built,
+      grid: built.grid,
+      placements: built.placements,
+      rejected: built.rejected,
       numbering
     });
   } catch (error) {
     console.error(error);
-    els.status.textContent = "Could not generate puzzle.";
+    els.status.textContent = `Could not generate puzzle: ${error.message}`;
   } finally {
     setBusy(false);
   }
