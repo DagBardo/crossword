@@ -223,3 +223,40 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+/* HARD LAYOUT OVERRIDE */
+
+.layout {
+  display: block !important;
+  width: 100% !important;
+}
+
+#grid.grid {
+  display: grid !important;
+  grid-template-columns: repeat(9, 48px) !important;
+  grid-template-rows: repeat(9, 48px) !important;
+  width: 442px !important;
+  height: 442px !important;
+  margin-bottom: 28px !important;
+  overflow: hidden !important;
+}
+
+.clues {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 22px !important;
+  width: 100% !important;
+  clear: both !important;
+}
+
+@media (max-width: 760px) {
+  #grid.grid {
+    grid-template-columns: repeat(9, 36px) !important;
+    grid-template-rows: repeat(9, 36px) !important;
+    width: 334px !important;
+    height: 334px !important;
+  }
+
+  .clues {
+    grid-template-columns: 1fr !important;
+  }
+}
