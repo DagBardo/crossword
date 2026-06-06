@@ -1,7 +1,7 @@
 import { generateThemeWords } from "./modules/aiWordGenerator.js?v=7";
 import { buildGrid } from "./modules/gridBuilder.js?v=7";
 import { numberClues } from "./modules/clueNumberer.js?v=7";
-import { CrosswordRenderer } from "./modules/crosswordRenderer.js?v=7";
+import { CrosswordRenderer } from "./modules/crosswordRenderer.js?v=12";
 
 const els = {
   themeInput: document.getElementById("themeInput"),
