@@ -1,2 +1,249 @@
-export class CrosswordRenderer{constructor({gridEl,acrossEl,downEl,statusEl,notesEl}){this.gridEl=gridEl;this.acrossEl=acrossEl;this.downEl=downEl;this.statusEl=statusEl;this.notesEl=notesEl;this.state=null;this.activeWord=null}render(puzzle){this.state=puzzle;this.activeWord=null;this.renderGrid();this.renderClues();this.renderNotes();this.setStatus(`Placed ${puzzle.placements.length} answers. ${puzzle.rejected.length?`${puzzle.rejected.length} not placed.`:""}`)}renderGrid(){const{grid,numbering}=this.state;this.gridEl.innerHTML="";for(let r=0;r<9;r++){
-  for(let c=0;c<9;c++){const wrapper=document.createElement("div");wrapper.className="cell-wrap";const input=document.createElement("input");input.className=grid[r][c]?"cell":"cell inactive";input.maxLength=1;input.dataset.row=r;input.dataset.col=c;input.disabled=!grid[r][c];const number=numbering.numbers.get(`${r},${c}`);if(number){const marker=document.createElement("span");marker.className="number";marker.textContent=number;wrapper.appendChild(marker)}input.addEventListener("input",e=>this.handleInput(e));input.addEventListener("keydown",e=>this.handleKeydown(e));input.addEventListener("focus",e=>this.selectCell(e));wrapper.appendChild(input);this.gridEl.appendChild(wrapper)}}}renderClues(){this.acrossEl.innerHTML="";this.downEl.innerHTML="";this.state.numbering.across.forEach(clue=>this.acrossEl.appendChild(this.makeClueItem(clue)));this.state.numbering.down.forEach(clue=>this.downEl.appendChild(this.makeClueItem(clue)))}renderNotes(){this.notesEl.innerHTML="";const placed=[...this.state.numbering.across,...this.state.numbering.down].sort((a,b)=>a.number-b.number);placed.forEach(item=>{const div=document.createElement("div");div.className="note";div.innerHTML=`<strong>${item.answer}</strong>: ${item.note||"No note supplied."}`;this.notesEl.appendChild(div)})}makeClueItem(clue){const li=document.createElement("li");li.dataset.row=clue.row;li.dataset.col=clue.col;li.dataset.direction=clue.direction;li.innerHTML=`<span class="clue-number">${clue.number}.</span>${clue.clue}`;li.addEventListener("click",()=>this.highlightWord(clue));return li}handleInput(event){const input=event.target;input.value=input.value.replace(/[^a-z]/gi,"").toUpperCase();input.classList.remove("correct","incorrect");if(input.value)this.moveFrom(input,this.activeWord?.direction||"across",1)}handleKeydown(event){const input=event.target;const map={ArrowRight:["across",1],ArrowLeft:["across",-1],ArrowDown:["down",1],ArrowUp:["down",-1]};if(map[event.key]){event.preventDefault();const[direction,delta]=map[event.key];this.moveFrom(input,direction,delta)}if(event.key==="Backspace"&&!input.value){this.moveFrom(input,this.activeWord?.direction||"across",-1)}}selectCell(event){event.target.classList.add("selected");event.target.addEventListener("blur",()=>event.target.classList.remove("selected"),{once:true})}moveFrom(input,direction,delta){const row=Number(input.dataset.row),col=Number(input.dataset.col),dr=direction==="down"?delta:0,dc=direction==="across"?delta:0;const next=this.gridEl.querySelector(`[data-row="${row+dr}"][data-col="${col+dc}"]`);if(next&&!next.disabled)next.focus()}highlightWord(clue){this.activeWord=clue;this.gridEl.querySelectorAll(".cell").forEach(cell=>cell.classList.remove("word"));document.querySelectorAll(".clues li").forEach(li=>li.classList.remove("active"));const dr=clue.direction==="down"?1:0,dc=clue.direction==="across"?1:0;for(let i=0;i<clue.answer.length;i++){const cell=this.gridEl.querySelector(`[data-row="${clue.row+dr*i}"][data-col="${clue.col+dc*i}"]`);if(cell)cell.classList.add("word")}const clueItem=document.querySelector(`li[data-row="${clue.row}"][data-col="${clue.col}"][data-direction="${clue.direction}"]`);if(clueItem)clueItem.classList.add("active");const first=this.gridEl.querySelector(`[data-row="${clue.row}"][data-col="${clue.col}"]`);if(first)first.focus()}check(){const{grid}=this.state;let filled=0,correct=0,total=0;this.gridEl.querySelectorAll(".cell:not(.inactive)").forEach(cell=>{const r=Number(cell.dataset.row),c=Number(cell.dataset.col);total++;cell.classList.remove("correct","incorrect");if(!cell.value)return;filled++;if(cell.value.toUpperCase()===grid[r][c]){correct++;cell.classList.add("correct")}else cell.classList.add("incorrect")});this.setStatus(`${correct}/${total} correct; ${filled}/${total} filled.`)}reveal(){const{grid}=this.state;this.gridEl.querySelectorAll(".cell:not(.inactive)").forEach(cell=>{const r=Number(cell.dataset.row),c=Number(cell.dataset.col);cell.value=grid[r][c];cell.classList.remove("incorrect");cell.classList.add("correct")});this.setStatus("Puzzle revealed.")}clear(){this.gridEl.querySelectorAll(".cell:not(.inactive)").forEach(cell=>{cell.value="";cell.classList.remove("correct","incorrect")});this.setStatus("Cleared.")}setStatus(message){this.statusEl.textContent=message}}
+export class CrosswordRenderer {
+  constructor({ gridEl, acrossEl, downEl, statusEl, notesEl }) {
+    this.gridEl = gridEl;
+    this.acrossEl = acrossEl;
+    this.downEl = downEl;
+    this.statusEl = statusEl;
+    this.notesEl = notesEl;
+    this.state = null;
+    this.activeWord = null;
+  }
+
+  render(puzzle) {
+    this.state = puzzle;
+    this.activeWord = null;
+    this.renderGrid();
+    this.renderClues();
+    this.renderNotes();
+    this.setStatus(`Puzzle ready: ${puzzle.placements.length} answers.`);
+  }
+
+  renderGrid() {
+    const { grid, numbering } = this.state;
+    this.gridEl.innerHTML = "";
+
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "cell-wrap";
+
+        const input = document.createElement("input");
+        input.className = grid[r][c] ? "cell" : "cell inactive";
+        input.maxLength = 1;
+        input.dataset.row = r;
+        input.dataset.col = c;
+        input.disabled = !grid[r][c];
+
+        const number = numbering.numbers.get(`${r},${c}`);
+        if (number) {
+          const marker = document.createElement("span");
+          marker.className = "number";
+          marker.textContent = number;
+          wrapper.appendChild(marker);
+        }
+
+        input.addEventListener("input", e => this.handleInput(e));
+        input.addEventListener("keydown", e => this.handleKeydown(e));
+        input.addEventListener("focus", e => this.selectCell(e));
+
+        wrapper.appendChild(input);
+        this.gridEl.appendChild(wrapper);
+      }
+    }
+  }
+
+  renderClues() {
+    this.acrossEl.innerHTML = "";
+    this.downEl.innerHTML = "";
+
+    this.state.numbering.across.forEach(clue => {
+      this.acrossEl.appendChild(this.makeClueItem(clue));
+    });
+
+    this.state.numbering.down.forEach(clue => {
+      this.downEl.appendChild(this.makeClueItem(clue));
+    });
+  }
+
+  renderNotes() {
+    this.notesEl.innerHTML = "";
+
+    const placed = [
+      ...this.state.numbering.across,
+      ...this.state.numbering.down
+    ].sort((a, b) => a.number - b.number);
+
+    placed.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "note";
+      div.innerHTML = `<strong>${item.answer}</strong>: ${item.note || "No note supplied."}`;
+      this.notesEl.appendChild(div);
+    });
+  }
+
+  makeClueItem(clue) {
+    const li = document.createElement("li");
+    li.dataset.row = clue.row;
+    li.dataset.col = clue.col;
+    li.dataset.direction = clue.direction;
+    li.innerHTML = `<span class="clue-number">${clue.number}.</span>${clue.clue}`;
+    li.addEventListener("click", () => this.highlightWord(clue));
+    return li;
+  }
+
+  handleInput(event) {
+    const input = event.target;
+    input.value = input.value.replace(/[^a-z]/gi, "").toUpperCase();
+    input.classList.remove("correct", "incorrect");
+
+    if (input.value) {
+      this.moveFrom(input, this.activeWord?.direction || "across", 1);
+    }
+  }
+
+  handleKeydown(event) {
+    const input = event.target;
+
+    const map = {
+      ArrowRight: ["across", 1],
+      ArrowLeft: ["across", -1],
+      ArrowDown: ["down", 1],
+      ArrowUp: ["down", -1]
+    };
+
+    if (map[event.key]) {
+      event.preventDefault();
+      const [direction, delta] = map[event.key];
+      this.moveFrom(input, direction, delta);
+    }
+
+    if (event.key === "Backspace" && !input.value) {
+      this.moveFrom(input, this.activeWord?.direction || "across", -1);
+    }
+  }
+
+  selectCell(event) {
+    event.target.classList.add("selected");
+    event.target.addEventListener(
+      "blur",
+      () => event.target.classList.remove("selected"),
+      { once: true }
+    );
+  }
+
+  moveFrom(input, direction, delta) {
+    const row = Number(input.dataset.row);
+    const col = Number(input.dataset.col);
+    const dr = direction === "down" ? delta : 0;
+    const dc = direction === "across" ? delta : 0;
+
+    const next = this.gridEl.querySelector(
+      `[data-row="${row + dr}"][data-col="${col + dc}"]`
+    );
+
+    if (next && !next.disabled) {
+      next.focus();
+    }
+  }
+
+  highlightWord(clue) {
+    this.activeWord = clue;
+
+    this.gridEl.querySelectorAll(".cell").forEach(cell => {
+      cell.classList.remove("word");
+    });
+
+    document.querySelectorAll(".clues li").forEach(li => {
+      li.classList.remove("active");
+    });
+
+    const dr = clue.direction === "down" ? 1 : 0;
+    const dc = clue.direction === "across" ? 1 : 0;
+
+    for (let i = 0; i < clue.answer.length; i++) {
+      const cell = this.gridEl.querySelector(
+        `[data-row="${clue.row + dr * i}"][data-col="${clue.col + dc * i}"]`
+      );
+
+      if (cell) {
+        cell.classList.add("word");
+      }
+    }
+
+    const clueItem = document.querySelector(
+      `li[data-row="${clue.row}"][data-col="${clue.col}"][data-direction="${clue.direction}"]`
+    );
+
+    if (clueItem) {
+      clueItem.classList.add("active");
+    }
+
+    const first = this.gridEl.querySelector(
+      `[data-row="${clue.row}"][data-col="${clue.col}"]`
+    );
+
+    if (first) {
+      first.focus();
+    }
+  }
+
+  check() {
+    const { grid } = this.state;
+    let filled = 0;
+    let correct = 0;
+    let total = 0;
+
+    this.gridEl.querySelectorAll(".cell:not(.inactive)").forEach(cell => {
+      const r = Number(cell.dataset.row);
+      const c = Number(cell.dataset.col);
+
+      total++;
+      cell.classList.remove("correct", "incorrect");
+
+      if (!cell.value) return;
+
+      filled++;
+
+      if (cell.value.toUpperCase() === grid[r][c]) {
+        correct++;
+        cell.classList.add("correct");
+      } else {
+        cell.classList.add("incorrect");
+      }
+    });
+
+    if (correct === total && total > 0) {
+      this.setStatus(`Puzzle complete: ${correct}/${total} squares correct.`);
+    } else {
+      this.setStatus(`${correct}/${total} correct; ${filled}/${total} filled.`);
+    }
+  }
+
+  reveal() {
+    const { grid } = this.state;
+
+    this.gridEl.querySelectorAll(".cell:not(.inactive)").forEach(cell => {
+      const r = Number(cell.dataset.row);
+      const c = Number(cell.dataset.col);
+
+      cell.value = grid[r][c];
+      cell.classList.remove("incorrect");
+      cell.classList.add("correct");
+    });
+
+    this.setStatus("Puzzle revealed.");
+  }
+
+  clear() {
+    this.gridEl.querySelectorAll(".cell:not(.inactive)").forEach(cell => {
+      cell.value = "";
+      cell.classList.remove("correct", "incorrect");
+    });
+
+    this.setStatus("Cleared.");
+  }
+
+  setStatus(message) {
+    this.statusEl.textContent = message;
+  }
+}
