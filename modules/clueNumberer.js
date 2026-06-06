@@ -1,1 +1,44 @@
-function startsAcross(grid,r,c){return grid[r][c]&&(c===0||!grid[r][c-1])&&c+1<grid.length&&grid[r][c+1]}function startsDown(grid,r,c){return grid[r][c]&&(r===0||!grid[r-1][c])&&r+1<grid.length&&grid[r+1][c]}function findPlacementAt(placements,row,col,direction){return placements.find(p=>p.row===row&&p.col===col&&p.direction===direction)}export function numberClues(grid,placements){const numbers=new Map(),across=[],down=[];let n=1;for(let r=0;r<grid.length;r++){for(let c=0;c<grid.length;c++){if(!grid[r][c])continue;const acrossStart=startsAcross(grid,r,c),downStart=startsDown(grid,r,c);if(!acrossStart&&!downStart)continue;numbers.set(`${r},${c}`,n);if(acrossStart){const placement=findPlacementAt(placements,r,c,"across");if(placement)across.push({number:n,...placement})}if(downStart){const placement=findPlacementAt(placements,r,c,"down");if(placement)down.push({number:n,...placement})}n++}}return{numbers,across,down}}
+export function numberClues(grid, placements) {
+  const numbers = new Map();
+  const across = [];
+  const down = [];
+  let n = 1;
+
+  const sorted = [...placements].sort((a, b) => {
+    if (a.row !== b.row) return a.row - b.row;
+    return a.col - b.col;
+  });
+
+  for (const placement of sorted) {
+    const key = `${placement.row},${placement.col}`;
+
+    let number;
+
+    if (numbers.has(key)) {
+      number = numbers.get(key);
+    } else {
+      number = n++;
+      numbers.set(key, number);
+    }
+
+    const clue = {
+      number,
+      ...placement
+    };
+
+    if (placement.direction === "across") {
+      across.push(clue);
+    } else {
+      down.push(clue);
+    }
+  }
+
+  across.sort((a, b) => a.number - b.number);
+  down.sort((a, b) => a.number - b.number);
+
+  return {
+    numbers,
+    across,
+    down
+  };
+}
