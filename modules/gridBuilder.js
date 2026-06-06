@@ -48,7 +48,7 @@ function scorePlacement(grid, word, row, col, direction) {
   const centerCol = col + dc * Math.floor(word.length / 2);
   const centerPenalty = Math.abs(centerRow - 4) + Math.abs(centerCol - 4);
 
-  return crosses * 10 - centerPenalty;
+  return crosses * 20 - centerPenalty;
 }
 
 function placeWord(grid, entry, row, col, direction) {
@@ -72,17 +72,25 @@ function placeWord(grid, entry, row, col, direction) {
   };
 }
 
-function firstPlacement(entry, size) {
-  const direction = entry.answer.length >= 7 ? "across" : "down";
-  const row = direction === "across"
-    ? Math.floor(size / 2)
-    : Math.max(0, Math.floor((size - entry.answer.length) / 2));
+function firstPlacements(entry, size) {
+  const spots = [];
 
-  const col = direction === "across"
-    ? Math.max(0, Math.floor((size - entry.answer.length) / 2))
-    : Math.floor(size / 2);
+  for (const direction of ["across", "down"]) {
+    const maxRow = direction === "across" ? size - 1 : size - entry.answer.length;
+    const maxCol = direction === "across" ? size - entry.answer.length : size - 1;
 
-  return { row, col, direction };
+    for (let row = 0; row <= maxRow; row++) {
+      for (let col = 0; col <= maxCol; col++) {
+        const centerRow = row + (direction === "down" ? Math.floor(entry.answer.length / 2) : 0);
+        const centerCol = col + (direction === "across" ? Math.floor(entry.answer.length / 2) : 0);
+        const centerPenalty = Math.abs(centerRow - 4) + Math.abs(centerCol - 4);
+
+        spots.push({ row, col, direction, score: -centerPenalty });
+      }
+    }
+  }
+
+  return spots.sort((a, b) => b.score - a.score).slice(0, 6);
 }
 
 function possiblePlacements(grid, entry) {
@@ -117,43 +125,92 @@ function possiblePlacements(grid, entry) {
   return candidates.sort((a, b) => b.score - a.score);
 }
 
-export function buildGrid(entries, size = SIZE) {
+function buildOne(entries, firstEntry, firstSpot, size) {
   let grid = makeEmptyGrid(size);
   const placements = [];
   const rejected = [];
 
-  const usable = entries
-    .filter(entry => entry.answer.length >= 3)
-    .filter(entry => entry.answer.length <= size)
-    .sort((a, b) => b.answer.length - a.answer.length);
-
-  if (!usable.length) {
-    return { grid, placements, rejected: entries };
-  }
-
-  const first = usable[0];
-  const fp = firstPlacement(first, size);
-  let placed = placeWord(grid, first, fp.row, fp.col, fp.direction);
-
+  let placed = placeWord(grid, firstEntry, firstSpot.row, firstSpot.col, firstSpot.direction);
   grid = placed.grid;
   placements.push(placed.placement);
 
-  for (const entry of usable.slice(1)) {
-    const candidates = possiblePlacements(grid, entry);
+  const remaining = entries.filter(e => e.answer !== firstEntry.answer);
 
-    if (!candidates.length) {
-      rejected.push(entry);
-      continue;
+  let progress = true;
+
+  while (progress && placements.length < 10) {
+    progress = false;
+
+    let best = null;
+
+    for (const entry of remaining) {
+      if (placements.some(p => p.answer === entry.answer)) continue;
+      if (rejected.some(r => r.answer === entry.answer)) continue;
+
+      const candidates = possiblePlacements(grid, entry);
+
+      if (candidates.length) {
+        const candidate = candidates[0];
+
+        if (!best || candidate.score > best.candidate.score) {
+          best = { entry, candidate };
+        }
+      }
     }
 
-    const chosen = candidates[0];
-    placed = placeWord(grid, entry, chosen.row, chosen.col, chosen.direction);
+    if (best) {
+      placed = placeWord(
+        grid,
+        best.entry,
+        best.candidate.row,
+        best.candidate.col,
+        best.candidate.direction
+      );
 
-    grid = placed.grid;
-    placements.push(placed.placement);
+      grid = placed.grid;
+      placements.push(placed.placement);
+      progress = true;
+    }
+  }
 
-    if (placements.length >= 10) break;
+  for (const entry of entries) {
+    if (!placements.some(p => p.answer === entry.answer)) {
+      rejected.push(entry);
+    }
   }
 
   return { grid, placements, rejected };
+}
+
+export function buildGrid(entries, size = SIZE) {
+  const usable = entries
+    .filter(entry => entry.answer.length >= 3)
+    .filter(entry => entry.answer.length <= size)
+    .sort((a, b) => a.answer.length - b.answer.length);
+
+  if (!usable.length) {
+    return {
+      grid: makeEmptyGrid(size),
+      placements: [],
+      rejected: entries
+    };
+  }
+
+  let best = null;
+
+  for (const firstEntry of usable) {
+    for (const firstSpot of firstPlacements(firstEntry, size)) {
+      const candidate = buildOne(usable, firstEntry, firstSpot, size);
+
+      if (!best || candidate.placements.length > best.placements.length) {
+        best = candidate;
+      }
+
+      if (candidate.placements.length >= 9) {
+        return candidate;
+      }
+    }
+  }
+
+  return best;
 }
