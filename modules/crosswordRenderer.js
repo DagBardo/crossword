@@ -24,30 +24,30 @@ export class CrosswordRenderer {
 
     for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
-        const wrapper = document.createElement("div");
-        wrapper.className = "cell-wrap";
-
-        const input = document.createElement("input");
-        input.className = grid[r][c] ? "cell" : "cell inactive";
-        input.maxLength = 1;
-        input.dataset.row = r;
-        input.dataset.col = c;
-        input.disabled = !grid[r][c];
+        const cell = document.createElement("div");
+        cell.className = grid[r][c] ? "cell" : "cell inactive";
+        cell.dataset.row = r;
+        cell.dataset.col = c;
+        cell.dataset.solution = grid[r][c] || "";
+        cell.dataset.value = "";
+        cell.tabIndex = grid[r][c] ? 0 : -1;
 
         const number = numbering.numbers.get(`${r},${c}`);
         if (number) {
           const marker = document.createElement("span");
           marker.className = "number";
           marker.textContent = number;
-          wrapper.appendChild(marker);
+          cell.appendChild(marker);
         }
 
-        input.addEventListener("input", e => this.handleInput(e));
-        input.addEventListener("keydown", e => this.handleKeydown(e));
-        input.addEventListener("focus", e => this.selectCell(e));
+        const letter = document.createElement("span");
+        letter.className = "letter";
+        cell.appendChild(letter);
 
-        wrapper.appendChild(input);
-        this.gridEl.appendChild(wrapper);
+        cell.addEventListener("click", () => this.selectCell(cell));
+        cell.addEventListener("keydown", e => this.handleKeydown(e, cell));
+
+        this.gridEl.appendChild(cell);
       }
     }
   }
@@ -91,18 +91,23 @@ export class CrosswordRenderer {
     return li;
   }
 
-  handleInput(event) {
-    const input = event.target;
-    input.value = input.value.replace(/[^a-z]/gi, "").toUpperCase();
-    input.classList.remove("correct", "incorrect");
+  handleKeydown(event, cell) {
+    if (cell.classList.contains("inactive")) return;
 
-    if (input.value) {
-      this.moveFrom(input, this.activeWord?.direction || "across", 1);
+    const key = event.key;
+
+    if (/^[a-zA-Z]$/.test(key)) {
+      event.preventDefault();
+      this.setCellValue(cell, key.toUpperCase());
+      this.moveFrom(cell, this.activeWord?.direction || "across", 1);
+      return;
     }
-  }
 
-  handleKeydown(event) {
-    const input = event.target;
+    if (key === "Backspace" || key === "Delete") {
+      event.preventDefault();
+      this.setCellValue(cell, "");
+      return;
+    }
 
     const map = {
       ArrowRight: ["across", 1],
@@ -111,38 +116,40 @@ export class CrosswordRenderer {
       ArrowUp: ["down", -1]
     };
 
-    if (map[event.key]) {
+    if (map[key]) {
       event.preventDefault();
-      const [direction, delta] = map[event.key];
-      this.moveFrom(input, direction, delta);
-    }
-
-    if (event.key === "Backspace" && !input.value) {
-      this.moveFrom(input, this.activeWord?.direction || "across", -1);
+      const [direction, delta] = map[key];
+      this.moveFrom(cell, direction, delta);
     }
   }
 
-  selectCell(event) {
-    event.target.classList.add("selected");
-    event.target.addEventListener(
-      "blur",
-      () => event.target.classList.remove("selected"),
-      { once: true }
-    );
+  setCellValue(cell, value) {
+    cell.dataset.value = value;
+    cell.querySelector(".letter").textContent = value;
+    cell.classList.remove("correct", "incorrect");
   }
 
-  moveFrom(input, direction, delta) {
-    const row = Number(input.dataset.row);
-    const col = Number(input.dataset.col);
+  selectCell(cell) {
+    this.gridEl.querySelectorAll(".cell").forEach(c => {
+      c.classList.remove("selected");
+    });
+
+    cell.classList.add("selected");
+    cell.focus({ preventScroll: true });
+  }
+
+  moveFrom(cell, direction, delta) {
+    const row = Number(cell.dataset.row);
+    const col = Number(cell.dataset.col);
     const dr = direction === "down" ? delta : 0;
     const dc = direction === "across" ? delta : 0;
 
     const next = this.gridEl.querySelector(
-      `[data-row="${row + dr}"][data-col="${col + dc}"]`
+      `.cell[data-row="${row + dr}"][data-col="${col + dc}"]:not(.inactive)`
     );
 
-    if (next && !next.disabled) {
-      next.focus();
+    if (next) {
+      this.selectCell(next);
     }
   }
 
@@ -162,7 +169,7 @@ export class CrosswordRenderer {
 
     for (let i = 0; i < clue.answer.length; i++) {
       const cell = this.gridEl.querySelector(
-        `[data-row="${clue.row + dr * i}"][data-col="${clue.col + dc * i}"]`
+        `.cell[data-row="${clue.row + dr * i}"][data-col="${clue.col + dc * i}"]`
       );
 
       if (cell) {
@@ -179,32 +186,31 @@ export class CrosswordRenderer {
     }
 
     const first = this.gridEl.querySelector(
-      `[data-row="${clue.row}"][data-col="${clue.col}"]`
+      `.cell[data-row="${clue.row}"][data-col="${clue.col}"]`
     );
 
     if (first) {
-      first.focus();
+      this.selectCell(first);
     }
   }
 
   check() {
-    const { grid } = this.state;
     let filled = 0;
     let correct = 0;
     let total = 0;
 
     this.gridEl.querySelectorAll(".cell:not(.inactive)").forEach(cell => {
-      const r = Number(cell.dataset.row);
-      const c = Number(cell.dataset.col);
-
       total++;
       cell.classList.remove("correct", "incorrect");
 
-      if (!cell.value) return;
+      const value = cell.dataset.value || "";
+      const solution = cell.dataset.solution || "";
+
+      if (!value) return;
 
       filled++;
 
-      if (cell.value.toUpperCase() === grid[r][c]) {
+      if (value === solution) {
         correct++;
         cell.classList.add("correct");
       } else {
@@ -220,14 +226,9 @@ export class CrosswordRenderer {
   }
 
   reveal() {
-    const { grid } = this.state;
-
     this.gridEl.querySelectorAll(".cell:not(.inactive)").forEach(cell => {
-      const r = Number(cell.dataset.row);
-      const c = Number(cell.dataset.col);
-
-      cell.value = grid[r][c];
-      cell.classList.remove("incorrect");
+      const solution = cell.dataset.solution || "";
+      this.setCellValue(cell, solution);
       cell.classList.add("correct");
     });
 
@@ -236,7 +237,7 @@ export class CrosswordRenderer {
 
   clear() {
     this.gridEl.querySelectorAll(".cell:not(.inactive)").forEach(cell => {
-      cell.value = "";
+      this.setCellValue(cell, "");
       cell.classList.remove("correct", "incorrect");
     });
 
