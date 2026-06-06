@@ -73,37 +73,36 @@ button:disabled {
 }
 
 .layout {
-  display: flex;
-  gap: 28px;
-  align-items: flex-start;
-  flex-wrap: wrap;
+  display: block;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(9, 48px);
   grid-template-rows: repeat(9, 48px);
-  width: 440px;
-  height: 440px;
+  width: 442px;
+  height: 442px;
   border: 2px solid var(--border);
   background: var(--border);
   gap: 1px;
-  flex: 0 0 440px;
+  margin-bottom: 24px;
+  overflow: hidden;
 }
 
 .cell-wrap {
   position: relative;
   width: 48px;
   height: 48px;
-  overflow: hidden;
 }
 
 .cell {
+  display: block;
   width: 48px;
   height: 48px;
   border: 0;
   border-radius: 0;
   padding: 0;
+  margin: 0;
   text-align: center;
   font-size: 23px;
   font-weight: 650;
@@ -111,6 +110,7 @@ button:disabled {
   background: var(--active);
   color: #111;
 }
+
 
 .cell.inactive {
   background: var(--inactive);
@@ -137,8 +137,7 @@ button:disabled {
   display: grid;
   gap: 22px;
   grid-template-columns: repeat(2, minmax(240px, 1fr));
-  flex: 1 1 520px;
-  min-width: 520px;
+  width: 100%;
 }
 
 .clues section,
@@ -225,5 +224,24 @@ button:disabled {
     grid-template-columns: 1fr;
     min-width: 0;
     flex-basis: 100%;
+  }
+}
+@media (max-width: 760px) {
+
+  .grid {
+    ...
+  }
+
+  .cell-wrap,
+  .cell {
+    ...
+  }
+
+  .cell {
+    ...
+  }
+
+  .clues {
+    ...
   }
 }
