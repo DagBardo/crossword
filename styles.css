@@ -227,21 +227,24 @@ button:disabled {
   }
 }
 @media (max-width: 760px) {
-
   .grid {
-    ...
+    grid-template-columns: repeat(9, 36px);
+    grid-template-rows: repeat(9, 36px);
+    width: 334px;
+    height: 334px;
   }
 
   .cell-wrap,
   .cell {
-    ...
+    width: 36px;
+    height: 36px;
   }
 
   .cell {
-    ...
+    font-size: 18px;
   }
 
   .clues {
-    ...
+    grid-template-columns: 1fr;
   }
 }
