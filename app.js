@@ -42,15 +42,45 @@ async function generatePuzzle() {
   els.status.textContent = `Generating ${style} puzzle for “${theme}”...`;
 
   try {
-    const entries = await generateThemeWords({
-      theme,
-      difficulty,
-      style,
-      maxWords: 18
-    });
+let best = null;
 
-    const built = buildGrid(entries, 9);
-    const numbering = numberClues(built.grid, built.placements);
+for (let attempt = 1; attempt <= 3; attempt++) {
+  els.status.textContent = `Generating ${style} puzzle for “${theme}”... attempt ${attempt}/3`;
+
+  const entries = await generateThemeWords({
+    theme,
+    difficulty,
+    style,
+    maxWords: 18
+  });
+
+  const built = buildGrid(entries, 9);
+  const numbering = numberClues(built.grid, built.placements);
+
+  const candidate = {
+    entries,
+    built,
+    numbering,
+    placedCount: built.placements.length
+  };
+
+  if (!best || candidate.placedCount > best.placedCount) {
+    best = candidate;
+  }
+
+  if (candidate.placedCount >= 7) {
+    break;
+  }
+}
+
+renderer.render({
+  theme,
+  difficulty,
+  style,
+  entries: best.entries,
+  ...best.built,
+  numbering: best.numbering
+});
 
     renderer.render({
       theme,
